@@ -105,10 +105,10 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
         output[circy, circx] = CRICLE_COLOR
     
     # print the counter and the line
-    j =  len(picks)-1
+    # j =  len(picks)-1
     cv2.line(output, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
-    cv2.putText(output, "-Counter border", (10, H - ((j * 20) + 200)),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+    # cv2.putText(output, "-Counter border", (10, H // 2),
+    #         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
     # loop over the tracked objects
     for (objectID, centroid) in objects.items():
        
@@ -179,6 +179,6 @@ if __name__ == "__main__":
         img, totalDown = detect(image, acc_thresh=ACC_THRESH, mean_thresh=MEAN_THRESH, totalDown=totalDown)
         cv2.imwrite(SAVE_DIR + '/' + image.split('/')[-1], img)     # save frame as JPEG file      
         print("Saved Frame# ", i+1)
-        # if i == 100:
+        # if i == 10:
         #     break
 
