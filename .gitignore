@@ -1,0 +1,5 @@
+/videos/*
+/results/*
+/frames/*
+
+__pycache__/
