@@ -2,5 +2,5 @@
 /results/*
 /frames/*
 __pycache__/
-
+ot.py
 !.gitkeep

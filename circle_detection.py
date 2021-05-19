@@ -8,11 +8,21 @@ from skimage.feature import canny
 from skimage.draw import circle_perimeter
 from config import *
 from tracker import CentroidTracker
-
+from trackableobject import TrackableObject
 
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker(maxDisappeared=8)
 (H, W) = (None, None)
+trackableObjects = {}
+
+# initialize the total number of frames processed thus far, along
+# with the total number of objects that have moved either up or down
+totalFrames = 0
+totalDown = 0
+totalUp = 0
+x = []
+empty=[]
+empty1=[]
 
 def nms(boxes, overlapThresh=0.3):
     # if there are no boxes, return an empty list
@@ -60,11 +70,11 @@ def nms(boxes, overlapThresh=0.3):
     # integer data type
     return boxes[pick].astype("int")
 
-def detect(file, acc_thresh=0.35, mean_thresh=160):
+def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
     img = cv2.imread(file)
     image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     output = img.copy()
-
+    (H, W) = img.shape[:2]
     edges = canny(image, sigma=2, low_threshold=1, high_threshold=10)
     # Detect two radii
     hough_radii = np.arange(16, 30, 2)
@@ -93,16 +103,66 @@ def detect(file, acc_thresh=0.35, mean_thresh=160):
         center_x = startX + radius
         circy, circx = circle_perimeter(center_y, center_x, radius, shape=image.shape)
         output[circy, circx] = CRICLE_COLOR
-        
+    
+    # print the counter and the line
+    j =  len(picks)-1
+    cv2.line(output, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
+    cv2.putText(output, "-Counter border", (10, H - ((j * 20) + 200)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
     # loop over the tracked objects
     for (objectID, centroid) in objects.items():
+       
+        # check to see if a trackable object exists for the current
+        # object ID
+        to = trackableObjects.get(objectID, None)
+
+        # if there is no existing trackable object, create one
+        if to is None:
+            to = TrackableObject(objectID, centroid)
+
+        # otherwise, there is a trackable object so we can utilize it
+        # to determine direction
+        else:
+            # the difference between the y-coordinate of the *current*
+            # centroid and the mean of *previous* centroids will tell
+            # us in which direction the object is moving (negative for
+            # 'up' and positive for 'down')
+            y = [c[1] for c in to.centroids]
+            direction = centroid[1] - np.mean(y)
+            to.centroids.append(centroid)
+
+            # check to see if the object has been counted or not
+            if not to.counted:
+                # if the direction is positive (indicating the object
+                # is moving down) AND the centroid is below the
+                # center line, count the object
+                if centroid[1] > H // 2:
+                    totalDown += 1
+                    empty1.append(totalDown)
+                    to.counted = True
+                    
+
+        # store the trackable object in our dictionary
+        trackableObjects[objectID] = to
+       
         # draw both the ID of the object and the centroid of the
         # object on the output frame
         text = "ID {}".format(objectID)
         cv2.putText(output, text, (centroid[0] - 10, centroid[1] - 10),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         # cv2.circle(output, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
-    return output
+        
+        
+
+    info2 = [
+    ("Total", totalDown),
+    ]
+
+    for (i, (k, v)) in enumerate(info2):
+        text = "{}: {}".format(k, v)
+        cv2.putText(output, text, (2, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+    return output, totalDown
 
 
 
@@ -116,9 +176,9 @@ if __name__ == "__main__":
     print('Total images', len(images))
     for i, image in enumerate(images):
         # detect and save the result image
-        img = detect(image, acc_thresh=ACC_THRESH, mean_thresh=MEAN_THRESH)
+        img, totalDown = detect(image, acc_thresh=ACC_THRESH, mean_thresh=MEAN_THRESH, totalDown=totalDown)
         cv2.imwrite(SAVE_DIR + '/' + image.split('/')[-1], img)     # save frame as JPEG file      
         print("Saved Frame# ", i+1)
-        if i == 45:
-            break
+        # if i == 100:
+        #     break
 
