@@ -2,8 +2,8 @@ IMAGES_PATH = './frames/video1'
 SAVE_DIR = './results/video1'
 
 NMS_OVERLAP_THRESH = 0.3 
-ACC_THRESH = 0.35
-MEAN_THRESH = 160 #how much bright circle should be considered
+ACC_THRESH = 0.4
+MEAN_THRESH = 145 #how much bright circle should be considered
 
 CRICLE_COLOR = (220, 20, 20)
 

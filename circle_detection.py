@@ -11,7 +11,7 @@ from tracker import CentroidTracker
 from trackableobject import TrackableObject
 
 # initialize our centroid tracker and frame dimensions
-ct = CentroidTracker(maxDisappeared=8)
+ct = CentroidTracker(maxDisappeared=MAX_DISAPPEARED, maxDistance=70)
 (H, W) = (None, None)
 trackableObjects = {}
 
@@ -23,6 +23,11 @@ totalUp = 0
 x = []
 empty=[]
 empty1=[]
+
+def sharpen(img):
+    kernal_sharpening = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
+    sharpend = cv2.filter2D(img,-1,kernal_sharpening)
+    return sharpend
 
 def nms(boxes, overlapThresh=0.3):
     # if there are no boxes, return an empty list
@@ -74,6 +79,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
     img = cv2.imread(file)
     image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     output = img.copy()
+    image = sharpen(image)
     (H, W) = img.shape[:2]
     edges = canny(image, sigma=2, low_threshold=1, high_threshold=10)
     # Detect two radii
@@ -90,7 +96,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
         box = image[center_y:center_y + radius, center_x:center_x+radius]
         mean_val = box.mean()
         means.append(mean_val)
-        if acc > acc_thresh and mean_val > mean_thresh:
+        if acc > acc_thresh and mean_val > mean_thresh and center_y > 100:
             boxes.append(bx)
 
     bboxes = np.array(boxes)
@@ -106,7 +112,8 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
     
     # print the counter and the line
     # j =  len(picks)-1
-    cv2.line(output, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
+    counter_center_H = H // 2
+    cv2.line(output, (0, counter_center_H), (W, counter_center_H), (0, 0, 0), 3)
     # cv2.putText(output, "-Counter border", (10, H // 2),
     #         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
     # loop over the tracked objects
@@ -136,7 +143,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
                 # if the direction is positive (indicating the object
                 # is moving down) AND the centroid is below the
                 # center line, count the object
-                if centroid[1] > H // 2:
+                if centroid[1] > counter_center_H:
                     totalDown += 1
                     empty1.append(totalDown)
                     to.counted = True
@@ -179,6 +186,6 @@ if __name__ == "__main__":
         img, totalDown = detect(image, acc_thresh=ACC_THRESH, mean_thresh=MEAN_THRESH, totalDown=totalDown)
         cv2.imwrite(SAVE_DIR + '/' + image.split('/')[-1], img)     # save frame as JPEG file      
         print("Saved Frame# ", i+1)
-        # if i == 10:
-        #     break
+        if i == 300:
+            break
 
