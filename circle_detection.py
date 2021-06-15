@@ -11,15 +11,8 @@ from tracker import CentroidTracker
 from trackableobject import TrackableObject
 import argparse
 
-parser = argparse.ArgumentParser(description='Args for file paths')
-parser.add_argument('--images-path', default='./frames/video1',
-                    help='video file path')
-parser.add_argument('--save-dir', default='./results/video1',
-                    help='frames save dir')
-args = parser.parse_args()
-
-IMAGES_PATH = args.images_path
-SAVE_DIR = args.save_dir
+IMAGES_PATH =None
+SAVE_DIR = None
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker(maxDisappeared=MAX_DISAPPEARED, maxDistance=70)
 (H, W) = (None, None)
@@ -89,7 +82,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
     img = cv2.imread(file)
     image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     output = img.copy()
-    image = sharpen(image)
+    # image = sharpen(image)
     (H, W) = img.shape[:2]
     edges = canny(image, sigma=2, low_threshold=1, high_threshold=10)
     # Detect two radii
@@ -106,7 +99,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
         box = image[center_y:center_y + radius, center_x:center_x+radius]
         mean_val = box.mean()
         means.append(mean_val)
-        if acc > acc_thresh and mean_val > mean_thresh and center_y > 100:
+        if acc > acc_thresh and mean_val > mean_thresh and center_y > 200:
             boxes.append(bx)
 
     bboxes = np.array(boxes)
@@ -122,7 +115,7 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
     
     # print the counter and the line
     # j =  len(picks)-1
-    counter_center_H = H // 2
+    counter_center_H = (H // 3) * 2
     cv2.line(output, (0, counter_center_H), (W, counter_center_H), (0, 0, 0), 3)
     # cv2.putText(output, "-Counter border", (10, H // 2),
     #         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
@@ -184,6 +177,15 @@ def detect(file, acc_thresh=0.35, mean_thresh=160, totalDown=0):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Args for file paths')
+    parser.add_argument('--images-path', default='./frames/video1',
+                        help='video file path')
+    parser.add_argument('--save-dir', default='./results/video1',
+                        help='frames save dir')
+    args = parser.parse_args()
+
+    IMAGES_PATH = args.images_path
+    SAVE_DIR = args.save_dir
     # Create save dir if not exist
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
@@ -192,10 +194,12 @@ if __name__ == "__main__":
     images = sorted(glob.glob(IMAGES_PATH + '/*'))
     print('Total images', len(images))
     for i, image in enumerate(images):
+        # if i < 300:
+        #     continue
         # detect and save the result image
         img, totalDown = detect(image, acc_thresh=ACC_THRESH, mean_thresh=MEAN_THRESH, totalDown=totalDown)
         cv2.imwrite(SAVE_DIR + '/' + image.split('/')[-1], img)     # save frame as JPEG file      
         print("Saved Frame# ", i+1)
-        if i == 300:
-            break
+        # if i == 300:
+        #     break
 
