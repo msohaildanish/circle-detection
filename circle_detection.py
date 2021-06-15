@@ -9,7 +9,17 @@ from skimage.draw import circle_perimeter
 from config import *
 from tracker import CentroidTracker
 from trackableobject import TrackableObject
+import argparse
 
+parser = argparse.ArgumentParser(description='Args for file paths')
+parser.add_argument('--images-path', default='./frames/video1',
+                    help='video file path')
+parser.add_argument('--save-dir', default='./results/video1',
+                    help='frames save dir')
+args = parser.parse_args()
+
+IMAGES_PATH = args.images_path
+SAVE_DIR = args.save_dir
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker(maxDisappeared=MAX_DISAPPEARED, maxDistance=70)
 (H, W) = (None, None)
